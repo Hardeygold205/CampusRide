@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -16,9 +16,14 @@ import axios from "axios";
 import Button from "../components/Button";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import * as AppleAuthentication from "expo-apple-authentication";
+import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
+import * as WebBrowser from "expo-web-browser";
 
 export default function Signup() {
+  WebBrowser.maybeCompleteAuthSession();
   const navigation = useNavigation();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,9 +33,48 @@ export default function Signup() {
   const [secureText, setSecureText] = useState(true);
 
   const Provider = [
-    { key: 1, name: "Google", icon: "google" },
-    { key: 2, name: "Facebook", icon: "facebook" },
+    {
+      key: 1,
+      name: "Google",
+      icon: "google",
+      bgColor: "#fff",
+      borderColor: "#4285F4",
+      iconColor: "#4285F4",
+      onPress: promptGoogleAsync,
+    },
+    {
+      key: 2,
+      name: "Facebook",
+      icon: "facebook",
+      bgColor: "#4267B2",
+      iconColor: "#fff",
+      onPress: promptFacebookAsync,
+    },
   ];
+
+  const [googleRequest, googleResponse, promptGoogleAsync] =
+    Google.useAuthRequest({
+      expoClientId: "YOUR_EXPO_CLIENT_ID",
+      iosClientId: "YOUR_IOS_CLIENT_ID",
+      androidClientId: "YOUR_ANDROID_CLIENT_ID",
+      webClientId: "YOUR_WEB_CLIENT_ID",
+    });
+
+  const [facebookRequest, facebookResponse, promptFacebookAsync] =
+    Facebook.useAuthRequest({
+      clientId: "YOUR_FACEBOOK_APP_ID",
+    });
+
+  useEffect(() => {
+    if (googleResponse?.type === "success") {
+      const { authentication } = googleResponse;
+      console.log("Google authentication:", authentication);
+    }
+    if (facebookResponse?.type === "success") {
+      const { authentication } = facebookResponse;
+      console.log("Facebook authentication:", authentication);
+    }
+  }, [googleResponse, facebookResponse]);
 
   const togglePasswordVisibility = () => {
     setSecureText(!secureText);
@@ -154,7 +198,7 @@ export default function Signup() {
               <Text style={styles.title}>Signup</Text>
               <Text style={styles.subtitle}>Create an account</Text>
             </View>
-            <View style={styles.inner}>
+            <View style={styles.inner} >
               <View style={styles.inputWrapper}>
                 <TextInput
                   value={username}
@@ -224,9 +268,27 @@ export default function Signup() {
                 {Provider.map((provider) => (
                   <TouchableOpacity
                     key={provider.key}
-                    style={styles.providerButton}>
-                    <Icon name={provider.icon} size={30} color="#000" />
-                    <Text style={styles.providerText}>{provider.name}</Text>
+                    style={[
+                      styles.providerButton,
+                      {
+                        backgroundColor: provider.bgColor,
+                        borderColor: provider.borderColor || "transparent",
+                        borderWidth: provider.borderColor ? 1 : 0,
+                      },
+                    ]}
+                    onPress={provider.onPress}>
+                    <Icon
+                      name={provider.icon}
+                      size={30}
+                      color={provider.iconColor}
+                    />
+                    <Text
+                      style={[
+                        styles.providerText,
+                        { color: provider.iconColor },
+                      ]}>
+                      {provider.name}
+                    </Text>
                   </TouchableOpacity>
                 ))}
                 <AppleAuthentication.AppleAuthenticationButton
@@ -289,7 +351,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     fontSize: 10,
-    marginTop: -20,
+    marginTop: -10,
   },
   footer: {
     flexDirection: "row",

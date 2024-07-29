@@ -40,8 +40,7 @@ const cacheImages = (images) => {
 };
 
 const loadResources = async () => {
-  const imageAssets = cacheImages([require("./assets/splash2.png"),]);
-
+  const imageAssets = cacheImages([require("./assets/splash2.png")]);
   await Promise.all([...imageAssets]);
 };
 export default function App() {

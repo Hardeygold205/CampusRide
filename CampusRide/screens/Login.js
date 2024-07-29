@@ -1,38 +1,46 @@
+import React, { useState } from "react";
 import {
-  StyleSheet,
   Text,
   View,
-  ScrollView,
+  StatusBar,
   TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Dimensions,
 } from "react-native";
-import React, { useState } from "react";
 import { TextInput } from "react-native-paper";
-import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Button from "../components/Button";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
+import { KeyboardAvoidingView } from "react-native";
 import axios from "axios";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import Button from "../components/Button";
+import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import PagerView from "react-native-pager-view";
 
-const Login = () => {
+export default function Login() {
   const navigation = useNavigation();
-  const [email, setEmail] = useState("");
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: "email", title: "Email/Username" },
+    { key: "phone", title: "Phone Number" },
+  ]);
+
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
-  const [secureText, setSecureText] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [secureText, setSecureText] = useState(true);
 
   const togglePasswordVisibility = () => {
     setSecureText(!secureText);
   };
 
-  const validateEmail = (email) => {
-    if (!email) {
-      return "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      return "Email address is invalid";
+  const validateEmailOrUsername = (emailOrUsername) => {
+    if (!emailOrUsername) {
+      return "Email or Username is required";
     }
     return "";
   };
@@ -47,12 +55,12 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
-    const emailError = validateEmail(email);
+    const emailError = validateEmailOrUsername(emailOrUsername);
     const passwordError = validatePassword(password);
 
     if (emailError || passwordError) {
       setErrors({
-        email: emailError,
+        emailOrUsername: emailError,
         password: passwordError,
       });
       return;
@@ -60,13 +68,12 @@ const Login = () => {
     setIsLoading(true);
     setMessage("");
     try {
-      const response = await axios.post("http://172.20.10.2:5001/api/login", {
-        email,
+      const response = await axios.post("http://172.20.10.2:5005/api/login", {
+        emailOrUsername,
         password,
       });
       console.log("Login response:", response.data);
-
-      navigation.replace("Home");
+      navigation.replace("OnBoardScreen");
     } catch (error) {
       console.error("Login error:", error);
       if (
@@ -83,10 +90,10 @@ const Login = () => {
     }
   };
 
-  const handleEmailChange = (value) => {
-    setEmail(value);
-    const emailError = validateEmail(value);
-    setErrors((prevErrors) => ({ ...prevErrors, email: emailError }));
+  const handleEmailOrUsernameChange = (value) => {
+    setEmailOrUsername(value);
+    const emailError = validateEmailOrUsername(value);
+    setErrors((prevErrors) => ({ ...prevErrors, emailOrUsername: emailError }));
   };
 
   const handlePasswordChange = (value) => {
@@ -95,106 +102,176 @@ const Login = () => {
     setErrors((prevErrors) => ({ ...prevErrors, password: passwordError }));
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.scrollView}
-        className="flex-1 p-5">
-        <View className="flex flex-col justify-center my-auto">
-          <View className="space-y-2 ">
-            <Text className="text-5xl font-extrabold">Login</Text>
-            <Text className="text-2xl text-gray-400">
-              Welcome Back to the App
-            </Text>
-          </View>
-          <View clas style={styles.inner}>
-            <View className="w-full">
-              <TextInput
-                value={email}
-                onChangeText={handleEmailChange}
-                label="Email"
-                mode="outlined"
-                activeOutlineColor="#228d5d"
-                error={errors.email ? true : false}
-              />
-              {errors.email && (
-                <Text className="mb-[-10px]" style={styles.errorText}>
-                  {errors.email}
-                </Text>
-              )}
-            </View>
-            <View className="w-full">
-              <TextInput
-                value={password}
-                onChangeText={handlePasswordChange}
-                label="Password"
-                mode="outlined"
-                activeOutlineColor="#42a5f5"
-                placeholderTextColor={"gray"}
-                secureTextEntry={secureText}
-                right={
-                  <Icon
-                    onPress={togglePasswordVisibility}
-                    name={secureText ? "eye-off" : "eye"}
-                  />
-                }
-                error={errors.password ? true : false}
-              />
-              <Icon
-                onPress={togglePasswordVisibility}
-                name={secureText ? "eye-off" : "eye"}
-                size={24}
-              />
-              {errors.password && (
-                <Text className="mb-[-10px]" style={styles.errorText}>
-                  {errors.password}
-                </Text>
-              )}
-            </View>
-            <Button isLoading={isLoading} onPress={handleLogin} title="Login" />
-            <Text style={styles.errorText}>{message}</Text>
-            <View className="flex-row items-center space-x-3">
-              <Text className="text-xl text-gray-500">
-                Don't have an account?
-              </Text>
-              <TouchableOpacity onPress={() => navigation.push("Signup")}>
-                <Text className="text-xl" style={{ color: "#228d5d" }}>
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View className="w-full items-center flex-row justify-center">
-              <View className="flex-1 h-[1px] bg-gray-300" />
-              <Text className="text-xl text-gray-500 mx-3">OR</Text>
-              <View className="flex-1 h-[1px] bg-gray-300" />
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
+  const handlePhoneChange = (value) => {
+    setPhone(value);
+  };
 
-export default Login;
+  const renderEmailOrUsernameLogin = () => (
+    <View style={styles.inner}>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          value={emailOrUsername}
+          onChangeText={handleEmailOrUsernameChange}
+          label="Email or Username"
+          mode="outlined"
+          activeOutlineColor="#228d5d"
+          error={errors.emailOrUsername ? true : false}
+        />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+      </View>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          value={password}
+          onChangeText={handlePasswordChange}
+          label="Password"
+          mode="outlined"
+          activeOutlineColor="#228d5d"
+          secureTextEntry={secureText}
+          right={
+            <TextInput.Icon
+              name={secureText ? "eye-off" : "eye"}
+              onPress={togglePasswordVisibility}
+            />
+          }
+          error={errors.password ? true : false}
+        />
+        {errors.password && (
+          <Text style={styles.errorText}>{errors.password}</Text>
+        )}
+      </View>
+      <Button isLoading={isLoading} onPress={handleLogin} title="Login" />
+      <View>
+        <Text style={styles.errorText}>{message}</Text>
+      </View>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Don't have an account?</Text>
+        <TouchableOpacity onPress={() => navigation.push("Signup")}>
+          <Text style={styles.footerLink}>Sign Up</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderPhoneLogin = () => (
+    <View style={styles.inner}>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          value={phone}
+          onChangeText={handlePhoneChange}
+          label="Phone Number"
+          mode="outlined"
+          activeOutlineColor="#228d5d"
+          error={errors.phone ? true : false}
+        />
+        {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+      </View>
+      <Button isLoading={isLoading} onPress={handleLogin} title="Login" />
+      <View>
+        <Text style={styles.errorText}>{message}</Text>
+      </View>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Don't have an account?</Text>
+        <TouchableOpacity onPress={() => navigation.push("Signup")}>
+          <Text style={styles.footerLink}>Sign Up</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderScene = SceneMap({
+    email: renderEmailOrUsernameLogin,
+    phone: renderPhoneLogin,
+  });
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <ScrollView contentContainerStyle={styles.scrollView}>
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Login</Text>
+              <Text style={styles.subtitle}>Welcome back to CampusRide</Text>
+            </View>
+            <TabView
+              navigationState={{ index, routes }}
+              renderScene={renderScene}
+              onIndexChange={setIndex}
+              initialLayout={{ width: Dimensions.get("window").width }}
+              renderPager={(props) => <PagerView {...props} />} // Add this line to use PagerView
+              renderTabBar={(props) => (
+                <TabBar
+                  {...props}
+                  indicatorStyle={{ backgroundColor: "#228d5d" }}
+                  style={{ backgroundColor: "white" }}
+                  labelStyle={{ color: "black" }}
+                />
+              )}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
+  );
+}
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "white",
+  },
   scrollView: {
     flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  container: {
+    width: "100%",
+    maxWidth: 400,
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  header: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 40,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  subtitle: {
+    fontSize: 20,
+    color: "#888",
   },
   inner: {
-    paddingVertical: 20,
-    flex: 1,
-    gap: 15,
+    width: "100%",
+    gap: 10,
   },
-  textInput: {
-    height: 40,
-    borderColor: "#000",
-    borderBottomWidth: 1,
-    marginBottom: 20,
+  inputWrapper: {
+    width: "100%",
   },
   errorText: {
     color: "red",
     fontSize: 10,
+    marginTop: -10,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  footerText: {
+    fontSize: 16,
+    color: "#888",
+    fontWeight: "bold",
+  },
+  footerLink: {
+    fontSize: 16,
+    color: "#228d5d",
+    marginLeft: 5,
+    fontWeight: "bold",
   },
 });
